@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documento Interativo com Criação de Itens</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .hidden { display: none; }
+        .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgb(0,0,0); background-color: rgba(0,0,0,0.4); padding-top: 60px; }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
+        .close:hover, .close:focus { color: black; text-decoration: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h3>Crie seus Itens</h3>
+    <textarea id="itemList" rows="10" cols="30" placeholder="Cole sua lista aqui..."></textarea><br>
+    <button id="generateItems">Gerar Itens</button>
+
+    <h3>Escolha os Itens para Aprimorar</h3>
+    <div id="itemsContainer"></div>
+    <button id="toggleSelect">Selecionar Todos</button>
+    <br><br>
+    <input type="text" id="filename" placeholder="Nome do arquivo">
+    <button id="saveJson">Salvar JSON</button>
+    <button id="loadJson">Carregar JSON</button>
+    <h3 id="loadedFileName" class="hidden"></h3>
+    <button id="openModal">Instruções</button>
+
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Como usar:</h3>
+            <p>Escolher Itens: Marque os itens que você deseja aprimorar.</p>
+            <p>Selecionar Todos: Clique no botão "Selecionar Todos" para marcar todos os itens.</p>
+            <p>Salvar JSON: Insira um nome para o arquivo e clique em "Salvar JSON" para baixar os itens selecionados como um arquivo JSON.</p>
+            <p>Carregar JSON: Clique em "Carregar JSON" para selecionar um arquivo salvo e carregar os itens. O nome do arquivo carregado será exibido no topo.</p>
+        </div>
+    </div>
+
+    <script>
+        const itemsContainer = document.getElementById('itemsContainer');
+        const generateButton = document.getElementById('generateItems');
+        const toggleButton = document.getElementById('toggleSelect');
+        const saveButton = document.getElementById('saveJson');
+        const loadButton = document.getElementById('loadJson');
+        const loadedFileName = document.getElementById('loadedFileName');
+        const modal = document.getElementById('myModal');
+        const span = document.getElementsByClassName('close')[0];
+
+        generateButton.onclick = function() {
+            itemsContainer.innerHTML = '';
+            const inputText = document.getElementById('itemList').value;
+            const cleanedItems = inputText.split('\n')
+                .map(item => item.trim())
+                .filter(item => item)
+                .map(item => item.replace(/Capítulo \d+:?/i, '').trim())
+                .map(item => item.replace(/Aula \d+:?/i, '').trim())
+                .filter(item => item); // Remove linhas vazias
+
+            cleanedItems.forEach(item => {
+                const label = document.createElement('label');
+                label.innerHTML = `<input type="checkbox" class="item" value="${item}"> ${item}`;
+                itemsContainer.appendChild(label);
+                itemsContainer.appendChild(document.createElement('br'));
+            });
+        };
+
+        toggleButton.onclick = function() {
+            const allChecked = Array.from(itemsContainer.querySelectorAll('.item')).every(item => item.checked);
+            itemsContainer.querySelectorAll('.item').forEach(item => item.checked = !allChecked);
+            toggleButton.textContent = allChecked ? 'Selecionar Todos' : 'Desmarcar Todos';
+        };
+
+        saveButton.onclick = function() {
+            const selectedItems = Array.from(itemsContainer.querySelectorAll('.item')).filter(item => item.checked).map(item => item.value);
+            const fileName = document.getElementById('filename').value || 'itens_aprimorados';
+            const json = JSON.stringify(selectedItems);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+
+        loadButton.onclick = function() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = event => {
+                    const data = JSON.parse(event.target.result);
+                    itemsContainer.innerHTML = '';
+                    data.forEach(item => {
+                        const label = document.createElement('label');
+                        label.innerHTML = `<input type="checkbox" class="item" value="${item}" checked> ${item}`;
+                        itemsContainer.appendChild(label);
+                        itemsContainer.appendChild(document.createElement('br'));
+                    });
+                    loadedFileName.textContent = `Arquivo Carregado: ${file.name}`;
+                    loadedFileName.classList.remove('hidden');
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        };
+
+        document.getElementById('openModal').onclick = function() {
+            modal.style.display = "block";
+        };
+
+        span.onclick = function() {
+            modal.style.display = "none";
+        };
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        };
+    </script>
+</body>
+</html>
