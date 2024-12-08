@@ -1,0 +1,1 @@
+# fnw_analisa_lista_seleciona
