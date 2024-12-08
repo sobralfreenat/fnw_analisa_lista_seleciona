@@ -5,33 +5,105 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Documento Interativo com Criação de Itens</title>
     <style>
-        body { font-family: Arial, sans-serif; }
-        .hidden { display: none; }
-        .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgb(0,0,0); background-color: rgba(0,0,0,0.4); padding-top: 60px; }
-        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; }
-        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
-        .close:hover, .close:focus { color: black; text-decoration: none; cursor: pointer; }
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        h4 {
+            color: black
+        }
+        textarea {
+            width: 100%;
+            max-width: 600px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            resize: vertical;
+        }
+        button {
+            background-color: darkgreen;
+            color: white;
+            border: gray;
+            border-radius: 5px;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #1116b3;
+        }
+        #itemsContainer {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin: 5px 0;
+            font-size: 16px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding-top: 60px;
+            background-opacity: 0.3;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 500px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover, .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <h3>Crie seus Itens</h3>
-    <textarea id="itemList" rows="10" cols="30" placeholder="Cole sua lista aqui..."></textarea><br>
-    <button id="generateItems">Gerar Itens</button>
+    <h4>CURADORIA DE CONTEUDO E FERRAMENTAS</h4>
+  <p><button id="openModal">Instruções</button><p><textarea id="itemList" rows="10" placeholder="Cole sua lista aqui..."></textarea>
+  <br><p><button id="generateItems">Gerar Itens</button>
 
-    <h3>Escolha os Itens para Aprimorar</h3>
+<h4 id="loadedFileName" class="hidden"></h3>
+
+    <h4>Gere os Itens para Aprimorar</h4>
     <div id="itemsContainer"></div>
     <button id="toggleSelect">Selecionar Todos</button>
-    <br><br>
-    <input type="text" id="filename" placeholder="Nome do arquivo">
+    <br> <br>
+    <input type="text" id="filename" placeholder="Digite o título do arquivo a ser salvo" style="width: calc(50% - 22px); margin-top: 20px;"> <br> <br>
     <button id="saveJson">Salvar JSON</button>
     <button id="loadJson">Carregar JSON</button>
-    <h3 id="loadedFileName" class="hidden"></h3>
-    <button id="openModal">Instruções</button>
-
+    
+  
     <div id="myModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
             <h3>Como usar:</h3>
+			<p> Defina e selecione a(s) lista(s) de origem.
+			<p> Copie a(s) listas e cole na área de texto.
             <p>Escolher Itens: Marque os itens que você deseja aprimorar.</p>
             <p>Selecionar Todos: Clique no botão "Selecionar Todos" para marcar todos os itens.</p>
             <p>Salvar JSON: Insira um nome para o arquivo e clique em "Salvar JSON" para baixar os itens selecionados como um arquivo JSON.</p>
@@ -63,7 +135,6 @@
                 const label = document.createElement('label');
                 label.innerHTML = `<input type="checkbox" class="item" value="${item}"> ${item}`;
                 itemsContainer.appendChild(label);
-                itemsContainer.appendChild(document.createElement('br'));
             });
         };
 
@@ -75,8 +146,13 @@
 
         saveButton.onclick = function() {
             const selectedItems = Array.from(itemsContainer.querySelectorAll('.item')).filter(item => item.checked).map(item => item.value);
+            const inputText = document.getElementById('itemList').value.split('\n').map(item => item.trim()).filter(item => item);
             const fileName = document.getElementById('filename').value || 'itens_aprimorados';
-            const json = JSON.stringify(selectedItems);
+            const jsonData = {
+                listaOriginal: inputText,
+                itensSelecionados: selectedItems
+            };
+            const json = JSON.stringify(jsonData, null, 2); // Formatação do JSON
             const blob = new Blob([json], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -96,11 +172,10 @@
                 reader.onload = event => {
                     const data = JSON.parse(event.target.result);
                     itemsContainer.innerHTML = '';
-                    data.forEach(item => {
+                    data.itensSelecionados.forEach(item => {
                         const label = document.createElement('label');
                         label.innerHTML = `<input type="checkbox" class="item" value="${item}" checked> ${item}`;
                         itemsContainer.appendChild(label);
-                        itemsContainer.appendChild(document.createElement('br'));
                     });
                     loadedFileName.textContent = `Arquivo Carregado: ${file.name}`;
                     loadedFileName.classList.remove('hidden');
